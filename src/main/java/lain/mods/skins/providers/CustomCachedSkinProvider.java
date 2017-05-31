@@ -10,22 +10,20 @@ import java.net.URL;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import lain.mods.skins.LegacyConversion;
-import lain.mods.skins.PlayerUtils;
 import lain.mods.skins.SkinData;
 import lain.mods.skins.api.ISkin;
 import lain.mods.skins.api.ISkinProvider;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.entity.AbstractClientPlayer;
 import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 import com.google.common.base.Strings;
+import com.mojang.authlib.GameProfile;
 
 public class CustomCachedSkinProvider implements ISkinProvider
 {
 
     private File _workDir;
     private String CustomHostAddress;
-
 
     public CustomCachedSkinProvider(String host)
     {
@@ -36,20 +34,15 @@ public class CustomCachedSkinProvider implements ISkinProvider
         if (!file2.exists())
             file2.mkdirs();
         prepareWorkDir(_workDir = new File(file2, "skins"));
-
         CustomHostAddress = host;
 
     }
 
     @Override
-    public ISkin getSkin(AbstractClientPlayer player)
+    public ISkin getSkin(GameProfile profile)
     {
         final SkinData data = new SkinData();
-        data.profile = player.getGameProfile();
-
-        final boolean skipUUID = PlayerUtils.isOfflinePlayer(player);
-        final UUID fbID = player.getUniqueID();
-
+        data.profile = profile;
         Shared.pool.execute(new Runnable()
         {
 
@@ -57,27 +50,31 @@ public class CustomCachedSkinProvider implements ISkinProvider
             public void run()
             {
                 BufferedImage image = null;
-                UUID uuid = ObjectUtils.defaultIfNull(data.profile.getId(), fbID);
-                String name = ObjectUtils.defaultIfNull(data.profile.getName(), "");
+                UUID uuid = data.profile.getId();
+                String name = data.profile.getName();
 
-                if (!skipUUID)
+                if (!Shared.isOfflineProfile(data.profile))
                 {
                     for (int n = 0; n < 5; n++)
                         try
                         {
-                            if ((image = readImageCached(_workDir, uuid.toString(), new URL(String.format("%1$s/skins/%2$s",CustomHostAddress, uuid)), Minecraft.getMinecraft().getProxy())) != null)
+                            //if ((image = readImageCached(_workDir, uuid.toString(), new URL(String.format("https://crafatar.com/skins/%s", uuid)), Minecraft.getMinecraft().getProxy())) != null)
+                              if ((image = readImageCached(_workDir, uuid.toString(), new URL(String.format("%1$s/skins/%2$s",CustomHostAddress, uuid)), Minecraft.getMinecraft().getProxy())) != null)
+                              
                                 break;
                         }
                         catch (IOException e)
                         {
                         }
                 }
-                if (image == null)
+                if (image == null && !StringUtils.isBlank(name))
                 {
                     for (int n = 0; n < 5; n++)
                         try
                         {
-                            if ((image = readImageCached(_workDir, name, new URL(String.format("%1$s/skins/%2$s",CustomHostAddress, name)), Minecraft.getMinecraft().getProxy())) != null)
+                            //if ((image = readImageCached(_workDir, name, new URL(String.format("https://crafatar.com/skins/%s", name)), Minecraft.getMinecraft().getProxy())) != null)
+                              if ((image = readImageCached(_workDir, name, new URL(String.format("%1$s/skins/%2$s",CustomHostAddress, name)), Minecraft.getMinecraft().getProxy())) != null)
+
                                 break;
                         }
                         catch (IOException e)

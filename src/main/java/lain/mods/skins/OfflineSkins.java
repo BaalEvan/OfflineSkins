@@ -3,7 +3,7 @@ package lain.mods.skins;
 import lain.mods.skins.api.ISkin;
 import lain.mods.skins.api.ISkinProviderService;
 import lain.mods.skins.api.SkinProviderAPI;
-import lain.mods.skins.providers.*;
+import lain.mods.skins.providers.*
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.entity.AbstractClientPlayer;
 import net.minecraft.util.ResourceLocation;
@@ -16,17 +16,30 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 import net.minecraftforge.fml.relauncher.Side;
 import net.minecraftforge.fml.relauncher.SideOnly;
+import com.mojang.authlib.GameProfile;
 
 @Mod(modid = "offlineskins", useMetadata = true, acceptedMinecraftVersions = "[1.10],[1.10.2]")
 public class OfflineSkins
 {
 
     @SideOnly(Side.CLIENT)
+    public static ResourceLocation bindTexture(GameProfile profile, ResourceLocation result)
+    {
+        if (SkinData.isDefaultSkin(result) && profile != null)
+        {
+            ISkin skin = skinService.getSkin(profile);
+            if (skin != null && skin.isSkinReady())
+                return skin.getSkinLocation();
+        }
+        return result;
+    }
+
+    @SideOnly(Side.CLIENT)
     public static ResourceLocation getLocationCape(AbstractClientPlayer player, ResourceLocation result)
     {
         if (result == null && capeService != null)
         {
-            ISkin cape = capeService.getSkin(player);
+            ISkin cape = capeService.getSkin(player.getGameProfile());
             if (cape != null && cape.isSkinReady())
                 return cape.getSkinLocation();
         }
@@ -39,9 +52,9 @@ public class OfflineSkins
         if (SkinPass)
             return result;
 
-        if (isDefaultSkin(player) && skinService != null)
+        if (usingDefaultSkin(player) && skinService != null)
         {
-            ISkin skin = skinService.getSkin(player);
+            ISkin skin = skinService.getSkin(player.getGameProfile());
             if (skin != null && skin.isSkinReady())
                 return skin.getSkinLocation();
         }
@@ -51,9 +64,9 @@ public class OfflineSkins
     @SideOnly(Side.CLIENT)
     public static String getSkinType(AbstractClientPlayer player, String result)
     {
-        if (isDefaultSkin(player) && skinService != null)
+        if (usingDefaultSkin(player) && skinService != null)
         {
-            ISkin skin = skinService.getSkin(player);
+            ISkin skin = skinService.getSkin(player.getGameProfile());
             if (skin != null && skin.isSkinReady())
                 return skin.getSkinType();
         }
@@ -61,7 +74,7 @@ public class OfflineSkins
     }
 
     @SideOnly(Side.CLIENT)
-    public static boolean isDefaultSkin(AbstractClientPlayer player)
+    public static boolean usingDefaultSkin(AbstractClientPlayer player)
     {
         try
         {
@@ -99,9 +112,9 @@ public class OfflineSkins
                     if (obj instanceof AbstractClientPlayer)
                     {
                         if (skinService != null)
-                            skinService.getSkin((AbstractClientPlayer) obj);
+                            skinService.getSkin(((AbstractClientPlayer) obj).getGameProfile());
                         if (capeService != null)
-                            capeService.getSkin((AbstractClientPlayer) obj);
+                            capeService.getSkin(((AbstractClientPlayer) obj).getGameProfile());
                     }
                 }
             }
@@ -114,24 +127,22 @@ public class OfflineSkins
         if (event.getSide().isClient())
         {
             Configuration config = new Configuration(event.getSuggestedConfigurationFile());
-
             boolean useCustomProvider = config.get(Configuration.CATEGORY_CLIENT, "useCustomProvider", true).getBoolean(true);
             String customProvider = config.get(Configuration.CATEGORY_CLIENT, "CustomProvider", "https://crafatar.com", "[default: https://crafatar.com]").getString();
-
             if (config.hasChanged())
                 config.save();
 
-            capeService = SkinProviderAPI.createService();
             skinService = SkinProviderAPI.createService();
-            if (useCustomProvider)
-                skinService.register(new CustomCachedSkinProvider(customProvider));
+            capeService = SkinProviderAPI.createService();
+
             skinService.register(new MojangCachedSkinProvider());
             skinService.register(new UserManagedSkinProvider());
-
             if (useCustomProvider)
-                capeService.register(new CustomCachedCapeProvider(customProvider));
+                skinService.register(new CustomCachedSkinProvider(customProvider));
             capeService.register(new MojangCachedCapeProvider());
             capeService.register(new UserManagedCapeProvider());
+            if (useCustomProvider)
+                capeService.register(new CustomCachedCapeProvider(customProvider));
 
             MinecraftForge.EVENT_BUS.register(this);
         }
