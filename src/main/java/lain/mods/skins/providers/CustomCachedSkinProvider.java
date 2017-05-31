@@ -19,20 +19,23 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.common.base.Strings;
 import com.mojang.authlib.GameProfile;
 
-public class CrafatarCachedSkinProvider implements ISkinProvider
+public class CustomCachedSkinProvider implements ISkinProvider
 {
 
     private File _workDir;
+    private String CustomHostAddress;
 
-    public CrafatarCachedSkinProvider()
+    public CustomCachedSkinProvider(String host)
     {
         File file1 = new File(Minecraft.getMinecraft().mcDataDir, "cachedImages");
         if (!file1.exists())
             file1.mkdirs();
-        File file2 = new File(file1, "crafatar");
+        File file2 = new File(file1, host.replaceAll("[:/ .]","").toLowerCase());
         if (!file2.exists())
             file2.mkdirs();
         prepareWorkDir(_workDir = new File(file2, "skins"));
+        CustomHostAddress = host;
+
     }
 
     @Override
@@ -55,7 +58,9 @@ public class CrafatarCachedSkinProvider implements ISkinProvider
                     for (int n = 0; n < 5; n++)
                         try
                         {
-                            if ((image = readImageCached(_workDir, uuid.toString(), new URL(String.format("https://crafatar.com/skins/%s", uuid)), Minecraft.getMinecraft().getProxy())) != null)
+                            //if ((image = readImageCached(_workDir, uuid.toString(), new URL(String.format("https://crafatar.com/skins/%s", uuid)), Minecraft.getMinecraft().getProxy())) != null)
+                              if ((image = readImageCached(_workDir, uuid.toString(), new URL(String.format("%1$s/skins/%2$s",CustomHostAddress, uuid)), Minecraft.getMinecraft().getProxy())) != null)
+                              
                                 break;
                         }
                         catch (IOException e)
@@ -67,7 +72,9 @@ public class CrafatarCachedSkinProvider implements ISkinProvider
                     for (int n = 0; n < 5; n++)
                         try
                         {
-                            if ((image = readImageCached(_workDir, name, new URL(String.format("https://crafatar.com/skins/%s", name)), Minecraft.getMinecraft().getProxy())) != null)
+                            //if ((image = readImageCached(_workDir, name, new URL(String.format("https://crafatar.com/skins/%s", name)), Minecraft.getMinecraft().getProxy())) != null)
+                              if ((image = readImageCached(_workDir, name, new URL(String.format("%1$s/skins/%2$s",CustomHostAddress, name)), Minecraft.getMinecraft().getProxy())) != null)
+
                                 break;
                         }
                         catch (IOException e)
